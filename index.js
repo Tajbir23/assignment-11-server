@@ -143,21 +143,39 @@ async function run() {
       const tokenEmail = req.user.email
       const librarianEmail = req.body.email
       const result = await librarian.findOne({admin: librarianEmail})
+      // res.send(result)
       console.log(result)
-      if(tokenEmail !== librarianEmail && result?.admin !== tokenEmail) return res.status(403).send({ message: 'access denied' })
-      if(tokenEmail === librarianEmail && result?.admin === tokenEmail) return res.status(201).send({ message: 'access granted' })
+      if(!result) return res.status(404).send({message: 'invalid'})
+        else if(tokenEmail !== librarianEmail) return res.status(403).send({message: 'forbidden access'})
+          else if(librarianEmail === result?.admin) return res.status(201).send({message: 'access granted'})
+        
     })
 
     app.put('/borrow_book', verifyToken, async (req, res) => {
       const tokenEmail = req?.user?.email
 
       const {quantity, author, authorEmail, id, category, description, image, name, rating, borrower, returnDate} = req.body
+      const currentDate = new Date().toDateString()
       
       if(tokenEmail !== borrower) return res.status(403).send({message: 'forbidden access'})
 
-        const result = allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$inc: {quantity: -1}})
+        await allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$inc: {quantity: -1}})
+
+        const result = await borrow.insertOne({author, authorEmail, borrowId: id, category, description, image, name, rating, borrower, returnDate, borrowedDate: currentDate});
+
         res.send(result)
       
+    })
+
+    app.patch('/update_book', verifyToken, async (req, res) => {
+      const {id, email} = req?.query
+      const tokenEmail = req?.user?.email
+      const data = req.body
+
+      if(tokenEmail !== email) return res.status(403).send({message: 'forbidden access'})
+      
+        const result = await allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$set: data})
+        res.send(result)
     })
     // Connect the client to the server	(optional starting in v4.7)
     
