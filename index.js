@@ -68,6 +68,18 @@ async function run() {
     const collection = db.collection('category');
     const allbooks = db.collection('allbooks');
     const librarian= db.collection('admin');
+    const borrow = db.collection('borrow');
+
+    await allbooks.updateMany(
+      { },
+      [
+        { 
+          $set: { 
+            quantity: { $toInt: "$quantity" }
+          } 
+        }
+      ]
+   )
     
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -98,7 +110,7 @@ async function run() {
       
       const book = req.body
       const result = await allbooks.insertOne(book);
-      console.log(result)
+      
       res.send(result);
     })
 
@@ -134,6 +146,18 @@ async function run() {
       console.log(result)
       if(tokenEmail !== librarianEmail && result?.admin !== tokenEmail) return res.status(403).send({ message: 'access denied' })
       if(tokenEmail === librarianEmail && result?.admin === tokenEmail) return res.status(201).send({ message: 'access granted' })
+    })
+
+    app.put('/borrow_book', verifyToken, async (req, res) => {
+      const tokenEmail = req?.user?.email
+
+      const {quantity, author, authorEmail, id, category, description, image, name, rating, borrower} = req.body
+      
+      if(tokenEmail !== borrower) return res.status(403).send({message: 'forbidden access'})
+
+        const result = allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$inc: {quantity: -1}})
+        res.send(result)
+      
     })
     // Connect the client to the server	(optional starting in v4.7)
     
