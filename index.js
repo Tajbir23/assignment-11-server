@@ -1,6 +1,6 @@
 require('dotenv').config()
 const express = require('express')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const jwt = require('jsonwebtoken')
@@ -71,7 +71,9 @@ async function run() {
     app.post('/jwt', async (req, res) => {
       const email = req.body
       console.log("logging in", email);
-      const token = await jwt.sign(email, process.env.ACCESS_TOKEN)
+      const token = await jwt.sign(email, process.env.ACCESS_TOKEN, {
+        expiresIn: '365d'
+      })
       res.cookie('token', token, cookieOptions).send({success: true})
     })
 
@@ -80,6 +82,7 @@ async function run() {
       console.log("logging out", user);
       res
         .clearCookie("token", { ...cookieOptions, maxAge: 0 })
+        .status()
         .send({ success: true });
     });
 
@@ -98,6 +101,14 @@ async function run() {
       console.log(result)
       res.send(result);
     })
+
+    app.get('/category/:id', async (req, res) => {
+      const {id} = req.params
+      const result = await allbooks.find({category: id}).toArray()
+      res.send(result)
+    })
+
+    
     // Connect the client to the server	(optional starting in v4.7)
     
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
