@@ -108,7 +108,11 @@ async function run() {
       res.send(result)
     })
 
-    
+    app.get('/details/:id', async (req, res) => {
+      const {id} = req.params
+      const result = await allbooks.find({_id: new ObjectId(id)}).toArray()
+      res.send(result)
+    })
     // Connect the client to the server	(optional starting in v4.7)
     
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
