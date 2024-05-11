@@ -177,6 +177,14 @@ async function run() {
         const result = await allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$set: data})
         res.send(result)
     })
+
+    app.delete('/delete_book', verifyToken, async (req, res) => {
+      const {id, email} = req?.query
+      const tokenEmail = req?.user?.email
+      if(tokenEmail!== email) return res.status(403).send({message: 'forbidden access'})
+        await allbooks.findOneAndDelete({_id: new ObjectId(id)})
+        res.send({message: 'deleted'})
+    })
     // Connect the client to the server	(optional starting in v4.7)
     
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
