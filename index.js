@@ -67,6 +67,7 @@ async function run() {
     const db = client.db('BookNook');
     const collection = db.collection('category');
     const allbooks = db.collection('allbooks');
+    const librarian= db.collection('admin');
     
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -82,7 +83,6 @@ async function run() {
       console.log("logging out", user);
       res
         .clearCookie("token", { ...cookieOptions, maxAge: 0 })
-        .status()
         .send({ success: true });
     });
 
@@ -110,8 +110,30 @@ async function run() {
 
     app.get('/details/:id', async (req, res) => {
       const {id} = req.params
-      const result = await allbooks.find({_id: new ObjectId(id)}).toArray()
+      
+      const result = await allbooks.findOne({_id: new ObjectId(id)})
       res.send(result)
+    })
+
+    app.get('/popular_book', async (req, res) => {
+      const result = await allbooks.find({rating: {$gte: '3'}}).toArray()
+      // console.log(result)
+      res.send(result)
+    })
+
+    app.get('/all_books', async (req, res) => {
+      const result = await allbooks.find().toArray()
+      // console.log(result)
+      res.send(result)
+    })
+
+    app.post('/check_librarian', verifyToken, async (req, res) => {
+      const tokenEmail = req.user.email
+      const librarianEmail = req.body.email
+      const result = await librarian.findOne({admin: librarianEmail})
+      console.log(result)
+      if(tokenEmail !== librarianEmail && result?.admin !== tokenEmail) return res.status(403).send({ message: 'access denied' })
+      if(tokenEmail === librarianEmail && result?.admin === tokenEmail) return res.status(201).send({ message: 'access granted' })
     })
     // Connect the client to the server	(optional starting in v4.7)
     
