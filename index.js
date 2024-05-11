@@ -151,7 +151,7 @@ async function run() {
     app.put('/borrow_book', verifyToken, async (req, res) => {
       const tokenEmail = req?.user?.email
 
-      const {quantity, author, authorEmail, id, category, description, image, name, rating, borrower} = req.body
+      const {quantity, author, authorEmail, id, category, description, image, name, rating, borrower, returnDate} = req.body
       
       if(tokenEmail !== borrower) return res.status(403).send({message: 'forbidden access'})
 
