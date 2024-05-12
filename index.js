@@ -128,15 +128,21 @@ async function run() {
     })
 
     app.get('/popular_book', async (req, res) => {
-      const result = await allbooks.find({rating: {$gte: '3'}}).toArray()
+      const result = await allbooks.find({rating: {$gte: '3'}}).limit(6).toArray()
       // console.log(result)
       res.send(result)
     })
 
     app.get('/all_books', async (req, res) => {
-      const result = await allbooks.find().toArray()
-      // console.log(result)
-      res.send(result)
+      const {books} = req.query
+
+      if(books === 'available_books'){
+        const result = await allbooks.find({quantity: {$gt: 0}}).toArray()
+        return res.send(result)
+      }else{
+        const result = await allbooks.find().toArray()
+        return res.send(result)
+      }
     })
 
     app.post('/check_librarian', verifyToken, async (req, res) => {
