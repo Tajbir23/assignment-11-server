@@ -149,8 +149,8 @@ async function run() {
       const tokenEmail = req.user.email
       const librarianEmail = req.body.email
       const result = await librarian.findOne({admin: librarianEmail})
-      // res.send(result)
-      console.log(result)
+
+      console.log(librarianEmail)
       if(!result) return res.status(404).send({message: 'invalid'})
         else if(tokenEmail !== librarianEmail) return res.status(403).send({message: 'forbidden access'})
           else if(librarianEmail === result?.admin) return res.status(201).send({message: 'access granted'})
@@ -190,6 +190,13 @@ async function run() {
       if(tokenEmail!== email) return res.status(403).send({message: 'forbidden access'})
         await allbooks.findOneAndDelete({_id: new ObjectId(id)})
         res.send({message: 'deleted'})
+    })
+    app.get('/borrowed_books', verifyToken, async (req, res) =>{
+      const tokenEmail = req?.user?.email
+      console.log(tokenEmail)
+      const result = await borrow.find({borrower: tokenEmail}).toArray()
+      console.log(result)
+      res.send(result)
     })
     // Connect the client to the server	(optional starting in v4.7)
     
