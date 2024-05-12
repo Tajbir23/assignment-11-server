@@ -85,7 +85,7 @@ async function run() {
       const email = req.body
       console.log("logging in", email);
       const token = await jwt.sign(email, process.env.ACCESS_TOKEN, {
-        expiresIn: '365d'
+        expiresIn: '7d'
       })
       res.cookie('token', token, cookieOptions).send({success: true})
     })
@@ -108,9 +108,9 @@ async function run() {
       const tokenEmail = req?.user?.email
       if(tokenEmail !== req?.body?.authorEmail) return res.status(403).send({ message: 'forbidden access' })
       
-      const book = req.body
-      const result = await allbooks.insertOne(book);
-      
+      const {name, image, quantity, category, author, authorEmail, description, rating} = req.body
+      const result = await allbooks.insertOne({name, image, quantity : Number(quantity), category, author, authorEmail, description, rating});
+      console.log(Number(quantity));
       res.send(result);
     })
 
