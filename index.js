@@ -193,10 +193,18 @@ async function run() {
     })
     app.get('/borrowed_books', verifyToken, async (req, res) =>{
       const tokenEmail = req?.user?.email
-      console.log(tokenEmail)
       const result = await borrow.find({borrower: tokenEmail}).toArray()
-      console.log(result)
       res.send(result)
+    })
+
+    app.put('/return_book', verifyToken, async (req, res) =>{
+      const tokenEmail = req?.user?.email
+      const {borrowId, userEmail} = req.query
+      if(tokenEmail !== userEmail) return res.status(403).send({message : 'forbidden access'})
+
+        await allbooks.findOneAndUpdate({_id: new ObjectId(borrowId)}, {$inc: {quantity: 1}})
+        await borrow.findOneAndDelete({borrowId})
+        res.send({message: 'book returned'})
     })
     // Connect the client to the server	(optional starting in v4.7)
     
