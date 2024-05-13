@@ -14,7 +14,8 @@ const app = express()
 app.use(
   cors({
     origin: [
-      "http://localhost:5173"
+      "http://localhost:5173",
+      "https://assignment11.tajbirideas.com"
     ],
     credentials: true,
   })
@@ -32,9 +33,9 @@ const cookieOptions = {
 
 
 
-// const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.sdyx3bs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.sdyx3bs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-const uri = 'mongodb://localhost:27017'
+// const uri = 'mongodb://localhost:27017'
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -70,16 +71,16 @@ async function run() {
     const librarian= db.collection('admin');
     const borrow = db.collection('borrow');
 
-    await allbooks.updateMany(
-      { },
-      [
-        { 
-          $set: { 
-            quantity: { $toInt: "$quantity" }
-          } 
-        }
-      ]
-   )
+  //   await allbooks.updateMany(
+  //     { },
+  //     [
+  //       { 
+  //         $set: { 
+  //           quantity: { $toInt: "$quantity" }
+  //         } 
+  //       }
+  //     ]
+  //  )
     
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -146,31 +147,36 @@ async function run() {
     })
 
     app.post('/check_librarian', verifyToken, async (req, res) => {
-      const tokenEmail = req.user.email
+      const tokenEmail = req?.user?.email
       const librarianEmail = req.body.email
       const result = await librarian.findOne({admin: librarianEmail})
 
-      console.log(librarianEmail)
       if(!result) return res.status(404).send({message: 'invalid'})
         else if(tokenEmail !== librarianEmail) return res.status(403).send({message: 'forbidden access'})
           else if(librarianEmail === result?.admin) return res.status(201).send({message: 'access granted'})
         
     })
 
+
     app.put('/borrow_book', verifyToken, async (req, res) => {
       const tokenEmail = req?.user?.email
 
       const {quantity, author, authorEmail, id, category, description, image, name, rating, borrower, returnDate} = req.body
       const currentDate = new Date().toDateString()
-      
+
       if(tokenEmail !== borrower) return res.status(403).send({message: 'forbidden access'})
+        else if(authorEmail === tokenEmail) return res.status(402).send({message: 'Author cannot borrow their book'})
 
-        await allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$inc: {quantity: -1}})
+      try {
+        const existingBook = await borrow.findOne({borrower, borrowId: id})
+        if(existingBook) return res.status(302).send({message: 'you are already borrows the book'})
 
-        const result = await borrow.insertOne({author, authorEmail, borrowId: id, category, description, image, name, rating, borrower, returnDate, borrowedDate: currentDate});
-
-        res.send(result)
-      
+          await allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$inc: {quantity: -1}})
+          const result = await borrow.insertOne({author, authorEmail, borrowId: id, category, description, image, name, rating, borrower, returnDate, borrowedDate: currentDate});
+          res.send(result)
+      } catch (error) {
+        console.log(error)
+      }
     })
 
     app.patch('/update_book', verifyToken, async (req, res) => {
