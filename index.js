@@ -10,7 +10,6 @@ const app = express()
 
 
 
-//Must remove "/" from your production URL
 app.use(
   cors({
     origin: [
@@ -45,23 +44,24 @@ const client = new MongoClient(uri, {
   }
 });
 
-const verifyToken = async(req, res, next) => {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.status(401).send({ message: "Unauthorized" });
-  }
-  try {
-    jwt.verify(token, process.env.ACCESS_TOKEN, (err, decode) => {
-      if (err) {
-        return res.status(401).send({ message: "Unauthorized" });
-      }
-      req.user = decode
-      next();
-    })
-  } catch (err) {
-    res.status(401).send({ message: "Unauthorized" });
-  }
-}
+// const verifyToken = async(req, res, next) => {
+//   const token = req.cookies.token;
+//   if (!token) {
+//     return res.status(401).send({ message: "Unauthorized" });
+//   }
+//   try {
+//     jwt.verify(token, process.env.ACCESS_TOKEN, (err, decode) => {
+//       if (err) {
+        
+//         return res.status(401).send({ message: "Unauthorized" });
+//       }
+//       req.user = decode
+//       next();
+//     })
+//   } catch (err) {
+//     res.status(401).send({ message: "Unauthorized", token });
+//   }
+// }
 
 async function run() {
   try {
@@ -70,17 +70,6 @@ async function run() {
     const allbooks = db.collection('allbooks');
     const librarian= db.collection('admin');
     const borrow = db.collection('borrow');
-
-  //   await allbooks.updateMany(
-  //     { },
-  //     [
-  //       { 
-  //         $set: { 
-  //           quantity: { $toInt: "$quantity" }
-  //         } 
-  //       }
-  //     ]
-  //  )
     
     app.post('/jwt', async (req, res) => {
       const email = req.body
@@ -105,9 +94,9 @@ async function run() {
       res.send(result);
     })
 
-    app.post('/add_books', verifyToken, async (req, res) => {
-      const tokenEmail = req?.user?.email
-      if(tokenEmail !== req?.body?.authorEmail) return res.status(403).send({ message: 'forbidden access' })
+    app.post('/add_books', async (req, res) => {
+      // const tokenEmail = req?.user?.email
+      // if(tokenEmail !== req?.body?.authorEmail) return res.status(403).send({ message: 'forbidden access' })
       
       const {name, image, quantity, category, author, authorEmail, description, rating} = req.body
       const result = await allbooks.insertOne({name, image, quantity : Number(quantity), category, author, authorEmail, description, rating});
@@ -146,26 +135,28 @@ async function run() {
       }
     })
 
-    app.post('/check_librarian', verifyToken, async (req, res) => {
-      const tokenEmail = req?.user?.email
+    app.post('/check_librarian', async (req, res) => {
+      // const tokenEmail = req?.user?.email
       const librarianEmail = req.body.email
       const result = await librarian.findOne({admin: librarianEmail})
 
       if(!result) return res.status(404).send({message: 'invalid'})
-        else if(tokenEmail !== librarianEmail) return res.status(403).send({message: 'forbidden access'})
+        // else if(tokenEmail !== librarianEmail) return res.status(403).send({message: 'forbidden access'})
           else if(librarianEmail === result?.admin) return res.status(201).send({message: 'access granted'})
         
     })
 
 
-    app.put('/borrow_book', verifyToken, async (req, res) => {
-      const tokenEmail = req?.user?.email
+    app.put('/borrow_book', async (req, res) => {
+      // const tokenEmail = req?.user?.email
 
       const {quantity, author, authorEmail, id, category, description, image, name, rating, borrower, returnDate} = req.body
       const currentDate = new Date().toDateString()
 
-      if(tokenEmail !== borrower) return res.status(403).send({message: 'forbidden access'})
-        else if(authorEmail === tokenEmail) return res.status(402).send({message: 'Author cannot borrow their book'})
+      
+
+      // if(tokenEmail !== borrower) return res.status(403).send({message: 'forbidden access'})
+      //   else if(authorEmail === tokenEmail) return res.status(402).send({message: 'Author cannot borrow their book'})
 
       try {
         const existingBook = await borrow.findOne({borrower, borrowId: id})
@@ -179,34 +170,37 @@ async function run() {
       }
     })
 
-    app.patch('/update_book', verifyToken, async (req, res) => {
+    app.patch('/update_book', async (req, res) => {
       const {id, email} = req?.query
-      const tokenEmail = req?.user?.email
+      // const tokenEmail = req?.user?.email
       const data = req.body
 
-      if(tokenEmail !== email) return res.status(403).send({message: 'forbidden access'})
+      // if(tokenEmail !== email) return res.status(403).send({message: 'forbidden access'})
       
         const result = await allbooks.findOneAndUpdate({_id: new ObjectId(id)}, {$set: data})
         res.send(result)
     })
 
-    app.delete('/delete_book', verifyToken, async (req, res) => {
+    app.delete('/delete_book', async (req, res) => {
       const {id, email} = req?.query
-      const tokenEmail = req?.user?.email
-      if(tokenEmail!== email) return res.status(403).send({message: 'forbidden access'})
+      // const tokenEmail = req?.user?.email
+      // if(tokenEmail!== email) return res.status(403).send({message: 'forbidden access'})
         await allbooks.findOneAndDelete({_id: new ObjectId(id)})
         res.send({message: 'deleted'})
     })
-    app.get('/borrowed_books', verifyToken, async (req, res) =>{
-      const tokenEmail = req?.user?.email
-      const result = await borrow.find({borrower: tokenEmail}).toArray()
+
+    app.get('/borrowed_books/:id', async (req, res) =>{
+      const Email = req?.params.id
+      console.log(Email)
+      const result = await borrow.find({borrower: Email}).toArray()
+      console.log(result)
       res.send(result)
     })
 
-    app.put('/return_book', verifyToken, async (req, res) =>{
-      const tokenEmail = req?.user?.email
+    app.put('/return_book', async (req, res) =>{
+      // const tokenEmail = req?.user?.email
       const {borrowId, userEmail} = req.query
-      if(tokenEmail !== userEmail) return res.status(403).send({message : 'forbidden access'})
+      // if(tokenEmail !== userEmail) return res.status(403).send({message : 'forbidden access'})
 
         await allbooks.findOneAndUpdate({_id: new ObjectId(borrowId)}, {$inc: {quantity: 1}})
         await borrow.findOneAndDelete({borrowId})
