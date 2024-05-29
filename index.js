@@ -123,17 +123,34 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/all_books', async (req, res) => {
-      const {books} = req.query
+    // app.get('/all_books', async (req, res) => {
+    //   const {books} = req.query
 
-      if(books === 'available_books'){
-        const result = await allbooks.find({quantity: {$gt: 0}}).toArray()
-        return res.send(result)
-      }else{
-        const result = await allbooks.find().toArray()
-        return res.send(result)
+    //   if(books === 'available_books'){
+    //     const result = await allbooks.find({quantity: {$gt: 0}}).toArray()
+    //     return res.send(result)
+    //   }else{
+    //     const result = await allbooks.find().toArray()
+    //     return res.send(result)
+    //   }
+    // })
+
+    app.get('/all_books', async (req, res) => {
+      const { books, page = 1, limit = 9 } = req.query;
+      const skip = (page - 1) * limit;
+    
+      let query = {};
+      if (books === 'available_books') {
+        query = { quantity: { $gt: 0 } };
       }
-    })
+    
+      const result = await allbooks.find(query).skip(skip).limit(parseInt(limit)).toArray();
+      const total = await allbooks.countDocuments(query);
+    
+      res.send({ result, total });
+    });
+    
+    
 
     app.post('/check_librarian', async (req, res) => {
       // const tokenEmail = req?.user?.email
