@@ -12,3 +12,8 @@ npm install
 
 # Start the development server
 node index.js
+
+enviroment variables firebase, mongodb
+secret_token =
+mongodb_user =
+mongodb pass =
